@@ -1,6 +1,15 @@
+/**
+ * @fileoverview Mongoose schema and model for financial accounts.
+ * Provides the structure for user accounts and encapsulated methods for calculating balances based on ledger entries.
+ * @module models/account.model
+ */
 const mongoose = require('mongoose');
 const ledgerModel = require('../models/ledger.model');
 
+/**
+ * Represents a user's financial account.
+ * @constructor accountSchema
+ */
 const accountSchema = new mongoose.Schema({
     user:{
         type: mongoose.Schema.Types.ObjectId,
@@ -26,8 +35,13 @@ const accountSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Compound index to optimize querying active accounts per user
 accountSchema.index({ user: 1, status: 1 });
 
+/**
+ * Calculates the real-time balance of the account by aggregating all associated ledger entries.
+ * @returns {Promise<number>} The computed balance (total credits - total debits).
+ */
 accountSchema.methods.getBalance = async function(){
     const balanceData = await ledgerModel.aggregate([
         {
@@ -67,6 +81,7 @@ accountSchema.methods.getBalance = async function(){
         {
             $project: {
                 _id: 0,
+                // Balance is calculated strictly as Credit - Debit based on standard financial rules
                 balance: {
                     $subtract: ["$totalCredit", "$totalDebit"]
                 }

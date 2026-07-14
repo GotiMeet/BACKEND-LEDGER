@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Controllers for processing financial transactions securely.
+ * Enforces business rules like idempotency, balance checks, and atomic double-entry ledger updates.
+ * @module controllers/transaction.controller
+ */
 const transactionModel = require('../models/transaction.model');
 const ledgerModel = require('../models/ledger.model');
 const { sendTransactionEmail, sendTransactionFailureEmail, sendRefundEmail } = require('../services/email.service');
@@ -5,22 +10,14 @@ const accountModel = require('../models/account.model');
 const mongoose = require('mongoose');
 
 /**
- * - Create a new Transaction
- *THE 10-STEP TRANSFER FLOW:
-     * 1. Validate request
-     * 2. Validate idempotency key
-     * 3. Check account status
-     * 4. Derive sender balance from ledger
-     * 5. Create DEBIT ledger entry
-     * 6. Create CREDIT ledger entry
-     * 7. Mark transaction COMPLETED
-     * 8. Commit MongoDB session
-     * 9. Send email notification
-     * 
+ * Orchestrates a secure fund transfer between two accounts.
+ * Implements idempotency to prevent double-charging and uses MongoDB sessions 
+ * for atomic double-entry bookkeeping (ensuring debits and credits always balance).
+ * @function createTransactionController
+ * @route POST /api/transactions
+ * @access Private
  */
-
 async function createTransactionController(req, res) {
-  // 1. Validate request
   const { fromAccount, toAccount, amount, idempotencyKey } = req.body;
 
   if (!fromAccount || !toAccount || !amount || !idempotencyKey) {
@@ -39,7 +36,7 @@ async function createTransactionController(req, res) {
     });
   }
 
-  // 2. Validate idempotency key
+  // Enforce idempotency: return the previous result if this exact request was already processed safely.
   const isTransactionAlreadyExists = await transactionModel.findOne({
     idempotencyKey,
   });
@@ -74,7 +71,7 @@ async function createTransactionController(req, res) {
     }
   }
 
-  // 3. Check account status
+  // Business rule: Both accounts must be active to prevent unauthorized transfers involving frozen or closed accounts.
   if (
     fromUserAccount.status !== "ACTIVE" ||
     toUserAccount.status !== "ACTIVE"
@@ -84,7 +81,7 @@ async function createTransactionController(req, res) {
     });
   }
 
-  // 4. Derive sender balance from ledger
+  // Calculate real-time balance dynamically from the ledger to guarantee accurate funds availability.
   const balance = await fromUserAccount.getBalance();
 
   if (balance < amount) {
@@ -96,7 +93,7 @@ async function createTransactionController(req, res) {
     let transaction;
     try {
         
-        // 5. Create Transaction (PENDING)
+        // Use an atomic MongoDB session to ensure the transaction and its double-entry ledger records are committed all together or not at all.
         const session = await mongoose.startSession();
         
         session.startTransaction();
@@ -114,7 +111,7 @@ async function createTransactionController(req, res) {
             { session },
         );
         
-        // 6. Create DEBIT ledger entry
+        
         const debitLedgerEntry = await ledgerModel.create(
             [
                 {
@@ -127,7 +124,7 @@ async function createTransactionController(req, res) {
             { session },
         );
         
-        // 7. Create CREDIT ledger entry
+        
         const creditLedgerEntry = await ledgerModel.create(
             [
                 {
@@ -140,7 +137,7 @@ async function createTransactionController(req, res) {
             { session },
         );
         
-        // 8. Mark transaction COMPLETED
+        
         
         await transactionModel.updateOne(
             { _id: transaction[0]._id },
@@ -148,7 +145,7 @@ async function createTransactionController(req, res) {
             { session },
         );
         
-        // 9. Commit MongoDB session
+        
         await session.commitTransaction();
         session.endSession();
         
@@ -157,7 +154,7 @@ async function createTransactionController(req, res) {
             message: "Transaction is Pending due to some issue, Please try again later"
         });
     }
-        // 10. Send email notification
+        
         await sendTransactionEmail(req.user.email, req.user.name, amount, toAccount);
         
         return res.status(201).json({
@@ -166,6 +163,13 @@ async function createTransactionController(req, res) {
         });
     }
     
+    /**
+     * Processes an administrative deposit of initial funds from the system account to a user account.
+     * Uses atomic transactions to ensure financial consistency.
+     * @function createInitialFundsTransactionController
+     * @route POST /api/transactions/system/initial-funds
+     * @access Private (System User Only)
+     */
     async function createInitialFundsTransactionController(req, res){
         const {toAccount, amount, idempotencyKey} = req.body;
         

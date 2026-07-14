@@ -1,5 +1,14 @@
+/**
+ * @fileoverview Mongoose schema and model for financial transactions.
+ * Represents the intent and state of a fund transfer between accounts.
+ * @module models/transaction.model
+ */
 const mongoose = require('mongoose');
 
+/**
+ * Represents a fund transfer request.
+ * @constructor transactionSchema
+ */
 const transactionShema = new mongoose.Schema({
     fromAccount: {
         type: mongoose.Schema.Types.ObjectId,
@@ -26,6 +35,8 @@ const transactionShema = new mongoose.Schema({
         required: [true, "Amount is required for creating a transaction"],
         min: [0, "Amount can't be zero"]
     },
+    // Idempotency key prevents duplicate transactions (e.g., from network retries). 
+    // It ensures that identical requests made multiple times yield the same result safely.
     idempotencyKey: {
         type: String,
         unique: true,

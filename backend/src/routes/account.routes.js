@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Defines Express routes for managing user financial accounts and balances.
+ * @module routes/account.routes
+ */
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth.middleware');
 const accountControlle = require('../controllers/account.controller');
@@ -5,23 +9,26 @@ const accountControlle = require('../controllers/account.controller');
 const router = express.Router();
 
 /**
- * - POST /api/accounts/
- * - Create a new account
- * - Protected Route
+ * Provisions a new financial account for the authenticated user.
+ * @name POST /api/accounts/
+ * @function
+ * @memberof module:routes/account.routes
  */
 router.post("/",authMiddleware, accountControlle.createAccountController);
 
 /**
- * - GET /api/accounts/
- * - Get account of a logged-in user
- * - Protected Route
+ * Retrieves all accounts owned by the authenticated user.
+ * @name GET /api/accounts/
+ * @function
+ * @memberof module:routes/account.routes
  */
 router.get("/", authMiddleware, accountControlle.getAccountsController);
 
 /**
- * - GET /api/accounts/balance/:accountId
- * - Get balance of an account
- * - Protected Route
+ * Calculates and retrieves the current balance for a specific account.
+ * @name GET /api/accounts/balance/:accountId
+ * @function
+ * @memberof module:routes/account.routes
  */
 
 router.get("/balance/:accountId", authMiddleware, accountControlle.getAccountBalanceController);

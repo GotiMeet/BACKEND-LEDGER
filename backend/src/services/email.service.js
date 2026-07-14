@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Email notification service for the Backend Ledger application.
+ * 
+ * BUSINESS PURPOSE:
+ * This service handles all asynchronous communication with users. 
+ * It manages critical touchpoints in the user journey, such as onboarding (welcome emails) 
+ * and financial alerts (transaction receipts, failures, and refunds).
+ * Welcome emails are specifically sent to confirm successful registration and immediately 
+ * engage the user, serving as the first step in the user onboarding flow.
+ * 
+ * @module services/email.service
+ */
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
@@ -45,6 +57,11 @@ const sendEmail = async (to, subject, text, html) => {
     
 //     await sendEmail(userEmail, subject, text, html);
 // }
+/**
+ * Dispatches a welcome email to newly registered users.
+ * Acts as the confirmation step in the onboarding flow to establish trust and engagement.
+ * @function sendRegistrationEmail
+ */
 async function sendRegistrationEmail(userEmail, name) {
     const subject = "Welcome to Backend Ledger!";
     
@@ -88,6 +105,11 @@ async function sendRegistrationEmail(userEmail, name) {
     await sendEmail(userEmail, subject, text, html);
 }
 
+/**
+ * Dispatches a receipt email confirming a successful fund transfer.
+ * Provides users with immediate visibility into their account activity.
+ * @function sendTransactionEmail
+ */
 async function sendTransactionEmail(userEmail, name, amount, toAccount) {
   const subject = "Transaction successful!";
   const text = `Hello ${name},\n\nThank you for creating an account on Backend Ledger! We're thrilled to have you onboard.\n\nBest regards,\nThe Backend Ledger Team`;
@@ -127,6 +149,11 @@ async function sendTransactionEmail(userEmail, name, amount, toAccount) {
     await sendEmail(userEmail, subject, text, html);
 }
 
+/**
+ * Dispatches an alert email when a transaction cannot be processed.
+ * Ensures users are promptly informed of financial failures so they can take corrective action.
+ * @function sendTransactionFailureEmail
+ */
 async function sendTransactionFailureEmail(userEmail, name, reason) {
     const subject = "Transaction Failed";
     const text = `Hello ${name},\n\nYour transaction has failed. Reason: ${reason}\n\nBest regards,\nThe Backend Ledger Team`;
@@ -166,6 +193,11 @@ async function sendTransactionFailureEmail(userEmail, name, reason) {
     await sendEmail(userEmail, subject, text, html);
 } 
 
+/**
+ * Dispatches a notification email when funds are returned to a user's account.
+ * Maintains transparency in the ledger resolution process.
+ * @function sendRefundEmail
+ */
 async function sendRefundEmail(userEmail, name, amount, fromAccount) {
     const subject = "Refund";
     const text = `Hello ${name},\n\nYour transaction has been refunded. Reason: ${reason}\n\nBest regards,\nThe Backend Ledger Team`;
