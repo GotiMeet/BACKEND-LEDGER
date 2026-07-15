@@ -1,10 +1,17 @@
+/**
+ * @fileoverview Controllers for user authentication, handling registration, login, and logout.
+ * @module controllers/auth.controller
+ */
 const userModel = require('../models/user.model');
 const tokenBlackListModel = require('../models/blackList.model');
 const jwt = require('jsonwebtoken');
 const emailService = require("../services/email.service");
 /**
- * - user register controller 
- * - POST api/auth/register
+ * Handles the creation of a new user account, generates an initial session token,
+ * and triggers a welcome email.
+ * @function userRegisterController
+ * @route POST /api/auth/register
+ * @access Public
  */
 async function userRegisterController(req, res) {
     
@@ -43,12 +50,15 @@ async function userRegisterController(req, res) {
 }
 
 /**
- * - user Login controller 
- * - POST api/auth/login
+ * Verifies user credentials and issues a new JWT session token upon success.
+ * @function userLoginController
+ * @route POST /api/auth/login
+ * @access Public
  */
 async function userLoginController(req, res) {
     const {email, password} = req.body;
 
+    // Password field is excluded by default for security; explicitly select it for verification
     const user = await userModel.findOne({email}).select("+password");
 
     if(!user)
@@ -82,8 +92,10 @@ async function userLoginController(req, res) {
 }
 
 /**
- * - user Logout controller 
- * - POST api/auth/logout
+ * Terminates a user session by invalidating the active JWT token and clearing client cookies.
+ * @function userLogoutController
+ * @route POST /api/auth/logout
+ * @access Private
  */
 async function userLogoutController(req, res) {
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];

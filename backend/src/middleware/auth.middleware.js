@@ -1,7 +1,16 @@
+/**
+ * @fileoverview Middleware functions for user authentication and authorization.
+ * @module middleware/auth.middleware
+ */
 const userModel = require('../models/user.model');
 const tokenBlackListModel = require('../models/blackList.model');
 const jwt = require('jsonwebtoken');
 
+/**
+ * Protects routes by requiring a valid, non-blacklisted JWT token.
+ * On success, attaches the authenticated user entity to the request object.
+ * @function authMiddleware
+ */
 async function authMiddleware(req, res, next) {
     try{
 
@@ -49,6 +58,11 @@ async function authMiddleware(req, res, next) {
     
 }
 
+/**
+ * Protects administrative routes by ensuring the requester is an authenticated system user.
+ * Combines token validation with role-based access control.
+ * @function authSystemUserMiddleware
+ */
 async function authSystemUserMiddleware(req, res, next){
     try {
         const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
